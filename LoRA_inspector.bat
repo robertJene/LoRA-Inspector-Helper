@@ -58,10 +58,7 @@ Set exitAfter=False
 
 IF /I "%Choice%"=="f" GOTO rootGetFolderPath
 IF /I "%Choice%"=="1" GOTO inspectLoras
-IF /I "%Choice%"=="2" (
-  Set exitAfter=True
-  GOTO inspectLoras
-)
+IF /I "%Choice%"=="2" GOTO inspectLorasCheckExisting
 IF /I "%Choice%"=="3" GOTO saveMetadataToFiles
 
 ECHO[
@@ -108,6 +105,83 @@ GOTO rootGetFolderPath
 REM *****************************************************************************
 
 REM ***** INSPECT LORAS *****
+:inspectLorasCheckExisting
+REM @ECHO ON
+cls
+ECHO[
+ECHO LoRA inspector -^> INSPECT LORA^(s^)
+ECHO[
+
+set X=0
+
+IF EXIST "LoRA_average_weights.txt" set /a X+=1
+IF EXIST "LoRA_average_weights.csv" set /a X+=1
+IF EXIST "LoRA_average_weights.bat" set /a X+=1
+
+REM no previous files exist
+IF "%X%"=="0" (
+  Set X=
+  Set exitAfter=True
+  GOTO inspectLoras
+)
+
+ECHO ***** WARNING *****
+ECHO[
+IF "%X%"=="1" (
+  ECHO 1 file exists from a previous run and will be deleted if you proceed:
+) ELSE (
+  ECHO %X% files exist from a previous run and will be deleted if you proceed:
+)
+ECHO[
+
+IF EXIST "LoRA_average_weights.txt" ECHO LoRA_average_weights.txt
+IF EXIST "LoRA_average_weights.csv" ECHO LoRA_average_weights.csv
+IF EXIST "LoRA_average_weights.bat" ECHO LoRA_average_weights.txt
+
+ECHO[
+
+ECHO NOTE: If you don't want to delete the file(s), rename the file(s)
+ECHO       that you want to keep before running this option.
+ECHO[
+
+Set YN=
+
+REM IF "%X%"=="1" (
+  Set /P YN=Do you want to delete the file(s) and continue? (Y/N, X = cancel, exit = quit): 
+REM ) ELSE (
+REM   Set /P YN=Do you want to delete the files and continue? (Y/N, X = cancel, exit = quit): 
+REM )
+
+
+ECHO[
+
+IF /I "%YN%"=="Y" (
+  DEL "LoRA_average_weights.*" /F /Q
+  Set exitAfter=True
+  GOTO inspectLoras
+)
+
+IF /I "%YN%"=="N" GOTO ROOT
+IF /I "%YN%"=="X" GOTO ROOT
+
+IF /I "%YN%"=="exit" GOTO endOfLine
+
+ECHO[
+ECHO "%YN$" is invalid. Please try again.
+ECHO[
+PAUSE
+GOTO inspectLorasCheckExisting
+
+
+PAUSE
+GOTO ROOT
+
+
+
+
+
+
+REM ***** INSPECT LORAS *****
 
 :inspectLoras
 Set afterFolderAsk=inspectLoras
@@ -131,6 +205,8 @@ CLS
 ECHO[
 
 python.exe "lora-inspector.py" -w "%folderPath%"
+ECHO[
+cscript.exe //NOLOGO LoRA_inspector_helper.vbs
 
 ECHO[
 
@@ -150,7 +226,7 @@ ECHO       Instructions:
 ECHO       1. Run this on a folder with LoRA files in it
 ECHO       2. When it is done, press Ctr+A to select all, then Ctrl+C to copy
 ECHO       3. Open LoRA_average_weights.txt and press Ctrl+V to paste
-ECHO       4. Run LoRA_inspector_helper.vbs again to create the CSV and batch file
+ECHO       4. Run LoRA_inspector_helper.vbs to create the CSV and batch file
 ECHO[
 ECHO       NOTE- if you don't have LoRA_average_weights.txt yet, simply
 ECHO             run LoRA_inspector_helper.vbs to create it
@@ -247,6 +323,7 @@ SET var=
 SET valid=
 SET count=
 SET afterFolderAsk=
+SET X=
 @ECHO ON
 CALL cmd.exe /k
 

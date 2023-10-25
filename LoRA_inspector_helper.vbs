@@ -7,8 +7,9 @@ If WScript.Arguments.Count = 0 Then
 
     Set filetxt = filesys.CreateTextFile("LoRA_average_weights.txt", True)
     
-    WScript.Echo "NOTE: LoRA_average_weights.tx did not exist, it has been created." & vbCrlf & _
-                  "      copy-paste the results of the inspection into it, and then save it."
+    WScript.Echo "NOTE: LoRA_average_weights.txt was just created." & vbCrlf & _
+                  "      copy-paste the results of the inspection into it, and then save it." & vbCrlf & _
+                  "      after that, run this script file again."
     WScript.Quit
 
   '***** This is the 3rd way to use this script, to have it parse the contents of LoRA_average_weights.txt and display it
@@ -31,8 +32,7 @@ If WScript.Arguments.Count = 0 Then
     filetxt.WriteLine("@ECHO OFF")
     filetxt.WriteLine()
 
-    Set regex = New RegExp
-    regex.Pattern = "^(UNet attention|Text Encoder) weight average (magnitude|strength): (\d+(\.\d+)?)$"
+
     filetxt.WriteLine("ECHO[")
 
 
@@ -43,30 +43,52 @@ If WScript.Arguments.Count = 0 Then
         If filesys.FileExists(line) Then
           fileName = filesys.GetFileName(line)
           csvToPut = fileName
+          UNETWAM = "NULL"
+          UNETWAS = "NULL"
+          TEWAM = "NULL"
+          TEWAS = "NULL"
+          
+
           X = X + 1
           If X > 1 Then
             filetxt.WriteLine("ECHO ----------------------")
           End If
           filetxt.WriteLine("ECHO " & fileName)
         End If
-        Set matches = regex.Execute(line)
-        If matches.Count > 0 Then
-            For Each match in matches
 
-              parts = split(match.Value, ": ")
 
-              If UBound(parts) = 1 Then
-                filetxt.WriteLine("ECHO " & parts(0) & vbTab & parts(1))
-              csvToPut = csvToPut & "," & parts(1)
-              Else
-                filetxt.WriteLine(match.Value)
-              End If
-            Next
-        End If
 
-      If instr(lCase(line), "text encoder weight average strength") Then
+      If instr(lCase(line), "unet weight average magnitude") Then
+
+        parts = split(line, ": ")
+        csvToPut = csvToPut & "," & parts(1)
+        filetxt.WriteLine("ECHO " & parts(0) & vbTab & parts(1))
+
+      ElseIf instr(lCase(line), "unet weight average strength") Then
+
+        parts = split(line, ": ")
+        csvToPut = csvToPut & "," & parts(1)
+        filetxt.WriteLine("ECHO " & parts(0) & vbTab & parts(1))
+
+      ElseIf instr(lCase(line), "text encoder") Then
+ 
+        If instr(lCase(line), "weight average magnitude") Then
+
+          parts = split(line, ": ")
+          csvToPut = csvToPut & "," & parts(1)
+          filetxt.WriteLine("ECHO " & parts(0) & vbTab & parts(1))
+
+        ElseIf instr(lCase(line), "weight average strength") Then
+
+          parts = split(line, ": ")
+          csvToPut = csvToPut & "," & parts(1)
+          filetxt.WriteLine("ECHO " & parts(0) & vbTab & parts(1))
 
         filetxtCSV.WriteLine(csvToPut)
+
+
+        End If
+
 
       End If
 
